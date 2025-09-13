@@ -1,6 +1,6 @@
 package com.message.handler;
 
-import com.message.dto.Message;
+import com.message.dto.domain.Message;
 import com.message.service.TerminalService;
 import com.message.util.JsonUtil;
 
