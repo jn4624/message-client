@@ -11,7 +11,7 @@ import org.glassfish.tyrus.client.ClientManager;
 
 import com.message.dto.websocket.outbound.BaseRequest;
 import com.message.dto.websocket.outbound.KeepAliveRequest;
-import com.message.dto.websocket.outbound.MessageRequest;
+import com.message.dto.websocket.outbound.WriteMessageRequest;
 import com.message.handler.WebSocketMessageHandler;
 import com.message.handler.WebSocketSender;
 import com.message.handler.WebSocketSessionHandler;
@@ -60,7 +60,7 @@ public class WebSocketService {
 			return true;
 		} catch (Exception e) {
 			terminalService.printSystemMessage(
-				String.format("Failed to connect to [%s] error: %s", webSocketUrl, e.getMessage()));
+				"Failed to connect to [%s] error: %s".formatted(webSocketUrl, e.getMessage()));
 			return false;
 		}
 	}
@@ -83,7 +83,7 @@ public class WebSocketService {
 			}
 		} catch (Exception e) {
 			terminalService.printSystemMessage(
-				String.format("Failed to close. error: %s", e.getMessage()));
+				"Failed to close. error: %s".formatted(e.getMessage()));
 		}
 	}
 
@@ -94,7 +94,7 @@ public class WebSocketService {
 	 */
 	public void sendMessage(BaseRequest baseRequest) {
 		if (session != null && session.isOpen()) {
-			if (baseRequest instanceof MessageRequest messageRequest) {
+			if (baseRequest instanceof WriteMessageRequest messageRequest) {
 				webSocketSender.sendMessage(session, messageRequest);
 				return;
 			}

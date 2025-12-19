@@ -1,6 +1,6 @@
 package com.message.dto.websocket.outbound;
 
-import com.message.constants.MessageType;
+import com.message.constant.MessageType;
 
 public class KeepAliveRequest extends BaseRequest {
 

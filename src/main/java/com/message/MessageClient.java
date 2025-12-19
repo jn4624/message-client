@@ -2,8 +2,9 @@ package com.message;
 
 import java.io.IOException;
 
-import com.message.dto.websocket.outbound.MessageRequest;
+import com.message.dto.websocket.outbound.WriteMessageRequest;
 import com.message.handler.CommandHandler;
+import com.message.handler.InboundMessageHandler;
 import com.message.handler.WebSocketMessageHandler;
 import com.message.handler.WebSocketSender;
 import com.message.service.RestApiService;
@@ -24,11 +25,12 @@ public class MessageClient {
 			return;
 		}
 
+		InboundMessageHandler inboundMessageHandler = new InboundMessageHandler(terminalService);
 		RestApiService restApiService = new RestApiService(terminalService, BASE_URL);
 		WebSocketSender webSocketSender = new WebSocketSender(terminalService);
 		WebSocketService webSocketService =
 			new WebSocketService(terminalService, webSocketSender, BASE_URL, WEBSOCKET_ENDPOINT);
-		webSocketService.setWebSocketMessageHandler(new WebSocketMessageHandler(terminalService));
+		webSocketService.setWebSocketMessageHandler(new WebSocketMessageHandler(inboundMessageHandler));
 		CommandHandler commandHandler = new CommandHandler(restApiService, webSocketService, terminalService);
 
 		while (true) {
@@ -44,7 +46,7 @@ public class MessageClient {
 				}
 			} else if (!input.isEmpty()) {
 				terminalService.printMessage("<me>", input);
-				webSocketService.sendMessage(new MessageRequest("test client", input));
+				webSocketService.sendMessage(new WriteMessageRequest("test client", input));
 			}
 		}
 	}
