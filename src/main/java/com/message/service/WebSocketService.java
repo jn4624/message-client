@@ -10,8 +10,8 @@ import java.util.concurrent.TimeUnit;
 import org.glassfish.tyrus.client.ClientManager;
 
 import com.message.dto.websocket.outbound.BaseRequest;
-import com.message.dto.websocket.outbound.KeepAliveRequest;
-import com.message.dto.websocket.outbound.WriteMessageRequest;
+import com.message.dto.websocket.outbound.KeepAlive;
+import com.message.dto.websocket.outbound.WriteMessage;
 import com.message.handler.WebSocketMessageHandler;
 import com.message.handler.WebSocketSender;
 import com.message.handler.WebSocketSessionHandler;
@@ -23,6 +23,7 @@ import jakarta.websocket.Session;
 
 public class WebSocketService {
 
+	private final UserService userService;
 	private final TerminalService terminalService;
 	private final WebSocketSender webSocketSender;
 	private final String webSocketUrl;
@@ -30,8 +31,14 @@ public class WebSocketService {
 	private Session session;
 	private ScheduledExecutorService scheduledExecutorService = null;
 
-	public WebSocketService(TerminalService terminalService, WebSocketSender webSocketSender, String url,
-		String endpoint) {
+	public WebSocketService(
+		UserService userService,
+		TerminalService terminalService,
+		WebSocketSender webSocketSender,
+		String url,
+		String endpoint
+	) {
+		this.userService = userService;
 		this.terminalService = terminalService;
 		this.webSocketSender = webSocketSender;
 		this.webSocketUrl = "ws://" + url + endpoint;
@@ -54,7 +61,7 @@ public class WebSocketService {
 
 		try {
 			session = clientManager.connectToServer(
-				new WebSocketSessionHandler(terminalService, this), config, new URI(webSocketUrl));
+				new WebSocketSessionHandler(userService, terminalService, this), config, new URI(webSocketUrl));
 			session.addMessageHandler(webSocketMessageHandler);
 			enableKeepAlive();
 			return true;
@@ -94,7 +101,7 @@ public class WebSocketService {
 	 */
 	public void sendMessage(BaseRequest baseRequest) {
 		if (session != null && session.isOpen()) {
-			if (baseRequest instanceof WriteMessageRequest messageRequest) {
+			if (baseRequest instanceof WriteMessage messageRequest) {
 				webSocketSender.sendMessage(session, messageRequest);
 				return;
 			}
@@ -116,7 +123,7 @@ public class WebSocketService {
 			scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 		}
 		scheduledExecutorService.scheduleAtFixedRate(() ->
-			sendMessage(new KeepAliveRequest()), 1, 1, TimeUnit.MINUTES);
+			sendMessage(new KeepAlive()), 1, 1, TimeUnit.MINUTES);
 	}
 
 	private void disableKeepAlive() {

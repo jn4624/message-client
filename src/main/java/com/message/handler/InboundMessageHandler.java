@@ -3,21 +3,28 @@ package com.message.handler;
 import com.message.dto.websocket.inbound.AcceptNotification;
 import com.message.dto.websocket.inbound.AcceptResponse;
 import com.message.dto.websocket.inbound.BaseMessage;
+import com.message.dto.websocket.inbound.CreateResponse;
 import com.message.dto.websocket.inbound.DisconnectResponse;
+import com.message.dto.websocket.inbound.EnterResponse;
+import com.message.dto.websocket.inbound.ErrorResponse;
 import com.message.dto.websocket.inbound.FetchConnectionsResponse;
 import com.message.dto.websocket.inbound.FetchUserInviteCodeResponse;
 import com.message.dto.websocket.inbound.InviteNotification;
 import com.message.dto.websocket.inbound.InviteResponse;
+import com.message.dto.websocket.inbound.JoinNotification;
 import com.message.dto.websocket.inbound.MessageNotification;
 import com.message.dto.websocket.inbound.RejectResponse;
 import com.message.service.TerminalService;
+import com.message.service.UserService;
 import com.message.util.JsonUtil;
 
 public class InboundMessageHandler {
 
+	private final UserService userService;
 	private final TerminalService terminalService;
 
-	public InboundMessageHandler(TerminalService terminalService) {
+	public InboundMessageHandler(UserService userService, TerminalService terminalService) {
+		this.userService = userService;
 		this.terminalService = terminalService;
 	}
 
@@ -42,6 +49,14 @@ public class InboundMessageHandler {
 					disconnect(disconnectResponse);
 				} else if (message instanceof FetchConnectionsResponse fetchConnectionsResponse) {
 					connections(fetchConnectionsResponse);
+				} else if (message instanceof CreateResponse createResponse) {
+					create(createResponse);
+				} else if (message instanceof JoinNotification joinNotification) {
+					joinNotification(joinNotification);
+				} else if (message instanceof EnterResponse enterResponse) {
+					enter(enterResponse);
+				} else if (message instanceof ErrorResponse errorResponse) {
+					error(errorResponse);
 				}
 			});
 	}
@@ -85,5 +100,26 @@ public class InboundMessageHandler {
 	private void connections(FetchConnectionsResponse fetchConnectionsResponse) {
 		fetchConnectionsResponse.getConnections().forEach(connection ->
 			terminalService.printSystemMessage("%s : %s".formatted(connection.username(), connection.status())));
+	}
+
+	private void create(CreateResponse createResponse) {
+		terminalService.printSystemMessage(
+			"Created channel %s: %s".formatted(createResponse.getChannelId(), createResponse.getTitle()));
+	}
+
+	private void joinNotification(JoinNotification joinNotification) {
+		terminalService.printSystemMessage(
+			"Joined channel %s: %s".formatted(joinNotification.getChannelId(), joinNotification.getTitle()));
+	}
+
+	private void enter(EnterResponse enterResponse) {
+		userService.moveToChannel(enterResponse.getChannelId());
+		terminalService.printSystemMessage(
+			"Enter channel %s: %s".formatted(enterResponse.getChannelId(), enterResponse.getTitle()));
+	}
+
+	private void error(ErrorResponse errorResponse) {
+		terminalService.printSystemMessage(
+			"Error %s: %s".formatted(errorResponse.getMessageType(), errorResponse.getMessage()));
 	}
 }

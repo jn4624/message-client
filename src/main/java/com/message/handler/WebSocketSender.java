@@ -1,6 +1,6 @@
 package com.message.handler;
 
-import com.message.dto.websocket.outbound.WriteMessageRequest;
+import com.message.dto.websocket.outbound.WriteMessage;
 import com.message.service.TerminalService;
 import com.message.util.JsonUtil;
 
@@ -14,7 +14,7 @@ public class WebSocketSender {
 		this.terminalService = terminalService;
 	}
 
-	public void sendMessage(Session session, WriteMessageRequest message) {
+	public void sendMessage(Session session, WriteMessage message) {
 		if (session != null && session.isOpen()) {
 			JsonUtil.toJson(message)
 				.ifPresent(

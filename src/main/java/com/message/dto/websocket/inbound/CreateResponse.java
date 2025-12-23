@@ -5,32 +5,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.message.constant.MessageType;
 import com.message.dto.domain.ChannelId;
 
-public class MessageNotification extends BaseMessage {
+public class CreateResponse extends BaseMessage {
 
 	private final ChannelId channelId;
-	private final String username;
-	private final String content;
+	private final String title;
 
 	@JsonCreator
-	public MessageNotification(
+	public CreateResponse(
 		@JsonProperty("channelId") ChannelId channelId,
-		@JsonProperty("username") String username,
-		@JsonProperty("content") String content) {
-		super(MessageType.NOTIFY_MESSAGE);
+		@JsonProperty("title") String title
+	) {
+		super(MessageType.CREATE_RESPONSE);
 		this.channelId = channelId;
-		this.username = username;
-		this.content = content;
+		this.title = title;
 	}
 
 	public ChannelId getChannelId() {
 		return channelId;
 	}
 
-	public String getUsername() {
-		return username;
-	}
-
-	public String getContent() {
-		return content;
+	public String getTitle() {
+		return title;
 	}
 }
