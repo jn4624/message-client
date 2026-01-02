@@ -1,6 +1,8 @@
 package com.message.handler;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -11,9 +13,14 @@ import com.message.dto.websocket.outbound.AcceptRequest;
 import com.message.dto.websocket.outbound.CreateRequest;
 import com.message.dto.websocket.outbound.DisconnectRequest;
 import com.message.dto.websocket.outbound.EnterRequest;
+import com.message.dto.websocket.outbound.FetchChannelInviteCodeRequest;
+import com.message.dto.websocket.outbound.FetchChannelsRequest;
 import com.message.dto.websocket.outbound.FetchConnectionsRequest;
 import com.message.dto.websocket.outbound.FetchUserInviteCodeRequest;
 import com.message.dto.websocket.outbound.InviteRequest;
+import com.message.dto.websocket.outbound.JoinRequest;
+import com.message.dto.websocket.outbound.LeaveRequest;
+import com.message.dto.websocket.outbound.QuitRequest;
 import com.message.dto.websocket.outbound.RejectRequest;
 import com.message.service.RestApiService;
 import com.message.service.TerminalService;
@@ -61,8 +68,12 @@ public class CommandHandler {
 		commands.put("disconnect", this::disconnect);
 		commands.put("connections", this::connections);
 		commands.put("pending", this::pending);
+		commands.put("channels", this::channels);
 		commands.put("create", this::create);
+		commands.put("join", this::join);
 		commands.put("enter", this::enter);
+		commands.put("leave", this::leave);
+		commands.put("quit", this::quit);
 		commands.put("clear", this::clear);
 		commands.put("exit", this::exit);
 		commands.put("help", this::help);
@@ -119,9 +130,15 @@ public class CommandHandler {
 	}
 
 	private Boolean inviteCode(String[] params) {
-		if (userService.isInLobby()) {
-			webSocketService.sendMessage(new FetchUserInviteCodeRequest());
-			terminalService.printSystemMessage("Get inviteCode for mine");
+		if (userService.isInLobby() && params.length > 0) {
+			if ("user".equals(params[0])) {
+				webSocketService.sendMessage(new FetchUserInviteCodeRequest());
+				terminalService.printSystemMessage("Get inviteCode for mine");
+			} else if ("channel".equals(params[0]) && params.length > 1) {
+				ChannelId channelId = new ChannelId(Long.valueOf(params[1]));
+				webSocketService.sendMessage(new FetchChannelInviteCodeRequest(channelId));
+				terminalService.printSystemMessage("Get inviteCode for channel");
+			}
 		}
 		return true;
 	}
@@ -174,10 +191,29 @@ public class CommandHandler {
 		return true;
 	}
 
+	private Boolean channels(String[] params) {
+		if (userService.isInLobby()) {
+			webSocketService.sendMessage(new FetchChannelsRequest());
+			terminalService.printSystemMessage("Request channels");
+		}
+		return true;
+	}
+
 	private Boolean create(String[] params) {
-		if (userService.isInLobby() && params.length > 1) {
-			webSocketService.sendMessage(new CreateRequest(params[0], params[1]));
+		if (userService.isInLobby() && params.length > 1 && params.length < 100) {
+			webSocketService.sendMessage(
+				new CreateRequest(params[0], List.of(Arrays.copyOfRange(params, 1, params.length))));
 			terminalService.printSystemMessage("Request create channel");
+		} else {
+			terminalService.printSystemMessage("Only 1 to 99 users can be included");
+		}
+		return true;
+	}
+
+	private Boolean join(String[] params) {
+		if (userService.isInLobby() && params.length > 0) {
+			webSocketService.sendMessage(new JoinRequest(new InviteCode(params[0])));
+			terminalService.printSystemMessage("Request join channel");
 		}
 		return true;
 	}
@@ -187,6 +223,23 @@ public class CommandHandler {
 			ChannelId channelId = new ChannelId(Long.valueOf(params[0]));
 			webSocketService.sendMessage(new EnterRequest(channelId));
 			terminalService.printSystemMessage("Request enter channel");
+		}
+		return true;
+	}
+
+	private Boolean leave(String[] params) {
+		if (userService.isInChannel()) {
+			webSocketService.sendMessage(new LeaveRequest());
+			terminalService.printSystemMessage("Request leave channel");
+		}
+		return true;
+	}
+
+	private Boolean quit(String[] params) {
+		if (userService.isInLobby() && params.length > 0) {
+			ChannelId channelId = new ChannelId(Long.valueOf(params[0]));
+			webSocketService.sendMessage(new QuitRequest(channelId));
+			terminalService.printSystemMessage("Request quit channel");
 		}
 		return true;
 	}
@@ -210,17 +263,21 @@ public class CommandHandler {
 				'/register' Register a new user. ex: /register <Username> <Password>
 				'/unregister' Unregister current user. ex: /unregister
 				'/login' Login. ex: /login <Username> <Password>
-				'/inviteCode' Get the inviteCode of mine. ex: /inviteCode
+				'/inviteCode' Get the inviteCode of mine or joined channel. ex: /inviteCode user or /inviteCode channel <ChannelId>
 				'/invite' Invite a user to connect. ex: /invite <InviteCode>
 				'/accept' Accept the invite request received. ex: /accept <InviterUsername>
 				'/reject' Reject the invite request received. ex: /reject <InviterUsername>
 				'/disconnect' Disconnect user. ex: /disconnect ex: /disconnect <ConnectedUsername>
 				'/connections' View the list of connected users. ex: /connections
 				'/pending' View the list of pending invites. ex: /pending
-				'/create' Create a direct channel. ex: /create <Title> <Username>
+				'/channels' View the list of joined channels. ex: /channels
+				'/create' Create a channel. (Up to 99 users) ex: /create <Title> <Username1> ...
+				'/join' Join the channel. ex: /join <InviteCode>
 				'/enter' Enter the channel. ex: /enter <ChannelId>
+				'/quit' Quit the channel. ex: /quit <ChannelId>
 				
 				Commands For Channel
+				'/leave' Leave the channel. ex: /leave
 				
 				Commands For Lobby/Channel
 				'/logout' Logout. ex: /logout
